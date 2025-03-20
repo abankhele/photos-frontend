@@ -1,10 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils"; // Ensure you have the Shadcn utility functions
+import { useNavigate } from "react-router-dom";
+import { authService } from "@/services/authService";
+import { User } from "@/types/auth"; // Import your User type
+import { JSX } from "react/jsx-runtime";
 
-export default function AuthenticatedHeader({ user }) {
+interface AuthenticatedHeaderProps {
+    user: User | null;
+    setIsAuthenticated: (value: boolean) => void;
+}
+
+export default function AuthenticatedHeader({
+    user,
+    setIsAuthenticated
+}: AuthenticatedHeaderProps): JSX.Element {
+    const navigate = useNavigate();
     const [scrolled, setScrolled] = useState(false);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
@@ -18,9 +31,17 @@ export default function AuthenticatedHeader({ user }) {
     }, []);
 
     const handleLogout = () => {
-        // Implement your logout logic here
-        console.log("Logging out...");
-        // Redirect to login page or home page after logout
+        // Call the logout method from authService
+        authService.logout();
+
+        // Update authentication state in parent component
+        setIsAuthenticated(false);
+
+        // Close the dropdown menu
+        setProfileMenuOpen(false);
+
+        // Redirect to login page
+        navigate("/login");
     };
 
     return (
@@ -49,10 +70,10 @@ export default function AuthenticatedHeader({ user }) {
                     <a href="/search" className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">
                         Search
                     </a>
-                    
+
                     {/* Profile dropdown */}
                     <div className="relative">
-                        <button 
+                        <button
                             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                             className="flex items-center space-x-2 focus:outline-none"
                         >
@@ -63,37 +84,39 @@ export default function AuthenticatedHeader({ user }) {
                                 {user?.name || 'User'}
                             </span>
                         </button>
-                        
-                        {/* Dropdown menu */}
-                        {profileMenuOpen && (
-                            <motion.div 
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 10 }}
-                                transition={{ duration: 0.2 }}
-                                className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-10"
-                            >
-                                <a 
-                                    href="/profile" 
-                                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+
+                        {/* Dropdown menu with AnimatePresence for proper exit animation */}
+                        <AnimatePresence>
+                            {profileMenuOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-10"
                                 >
-                                    Profile Settings
-                                </a>
-                                <a 
-                                    href="/uploads" 
-                                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                                >
-                                    My Uploads
-                                </a>
-                                <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                                <button 
-                                    onClick={handleLogout}
-                                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                >
-                                    Logout
-                                </button>
-                            </motion.div>
-                        )}
+                                    <a
+                                        href="/profile"
+                                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                    >
+                                        Profile Settings
+                                    </a>
+                                    <a
+                                        href="/uploads"
+                                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                    >
+                                        My Uploads
+                                    </a>
+                                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    >
+                                        Logout
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </nav>
             </div>

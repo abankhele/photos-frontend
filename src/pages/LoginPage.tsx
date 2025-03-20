@@ -1,29 +1,68 @@
-"use client";
-
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { useNavigate, useLocation } from "react-router-dom";
+import { authService } from "@/services/authService";
 
-export default function LoginPage() {
+interface LoginPageProps {
+  setIsAuthenticated: (value: boolean) => void;
+  setUser: (user: any) => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [formData, setFormData] = useState({
         email: "",
         password: "",
         rememberMe: false
     });
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    // Redirect if already logged in
+    useEffect(() => {
+      if (authService.isAuthenticated()) {
+        navigate("/dashboard");
+      }
+    }, [navigate]);
 
-    const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+        if (error) setError(null);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle login logic here
-        console.log("Login form submitted:", formData);
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await authService.login({
+                email: formData.email,
+                password: formData.password
+            });
+
+            // Store token and user info
+            localStorage.setItem("token", response.token);
+            localStorage.setItem("user", JSON.stringify(response.user));
+            
+            // Update app-level state
+            setIsAuthenticated(true);
+            setUser(response.user);
+
+            // Get the redirect path from location state or default to dashboard
+            const from = location.state?.from?.pathname || "/dashboard";
+            navigate(from, { replace: true });
+        } catch (err) {
+            setError("Invalid email or password");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -35,9 +74,19 @@ export default function LoginPage() {
                 className="w-full max-w-md"
             >
                 <Card className="bg-white dark:bg-gray-800 shadow-xl border-none overflow-hidden">
-
-
                     <CardContent className="p-6">
+                        <h2 className="text-2xl font-bold text-center mb-6">Welcome Back</h2>
+
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+                            >
+                                {error}
+                            </motion.div>
+                        )}
+
                         <motion.form
                             onSubmit={handleSubmit}
                             className="space-y-4"
@@ -128,10 +177,14 @@ export default function LoginPage() {
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
-                                    className="w-full py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+                                    className={`w-full py-3 rounded-lg shadow-lg transition-colors ${isLoading
+                                        ? "bg-blue-400 cursor-not-allowed"
+                                        : "bg-blue-600 hover:bg-blue-700"
+                                        } text-white`}
                                     type="submit"
+                                    disabled={isLoading}
                                 >
-                                    Sign In
+                                    {isLoading ? "Signing In..." : "Sign In"}
                                 </motion.button>
                             </motion.div>
 
@@ -162,4 +215,6 @@ export default function LoginPage() {
             </motion.div>
         </div>
     );
-}
+};
+
+export default LoginPage;
