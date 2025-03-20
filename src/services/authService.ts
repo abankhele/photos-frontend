@@ -1,11 +1,11 @@
 // src/services/authService.ts
 import { RegisterRequest, LoginRequest, AuthResponse, User } from '@/types/auth';
 
-const API_URL = "http://localhost:8080/api/photos";
+const API_URL = "http://localhost:8090/api";
 
 export const authService = {
     register: async (userData: Omit<RegisterRequest, 'passwordHash'> & { password: string }): Promise<AuthResponse> => {
-        const response = await fetch(`${API_URL}/register`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -23,11 +23,15 @@ export const authService = {
             throw new Error(data.message || "Registration failed");
         }
 
+        // Store user data and token
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", data.token);
+
         return data;
     },
 
     login: async (credentials: Omit<LoginRequest, 'passwordHash'> & { password: string }): Promise<AuthResponse> => {
-        const response = await fetch(`${API_URL}/login`, {
+        const response = await fetch(`${API_URL}/auth/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -43,6 +47,10 @@ export const authService = {
         if (!response.ok) {
             throw new Error(data.message || "Login failed");
         }
+
+        // Store user data and token
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", data.token);
 
         return data;
     },
