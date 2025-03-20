@@ -12,7 +12,8 @@ export const photoService = {
             throw new Error("User not authenticated");
         }
 
-        const response = await fetch(`${API_URL}/user/${userId}`, {
+        const encodedUserId = encodeURIComponent(userId);
+        const response = await fetch(`${API_URL}/user/${encodedUserId}`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${localStorage.getItem('token')}`
