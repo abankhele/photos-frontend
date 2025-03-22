@@ -68,5 +68,6 @@ export const photoService = {
     getPhotoUrl(photoId: string): string {
         const token = localStorage.getItem('token');
         return `http://localhost:8090/api/photos/image/${photoId}?token=${token}`;
+       
     }
 };

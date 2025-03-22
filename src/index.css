@@ -56,3 +56,45 @@
         --chart-5: 282 4% 44%;
     }
 }
+
+/* Masonry grid for photo gallery */
+/* Masonry grid for photo gallery */
+.masonry-grid {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+  }
+  
+  .masonry-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+  }
+  
+  .masonry-item {
+    width: 100%;
+    break-inside: avoid;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+  
+  .masonry-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* For larger screens, create more columns */
+  @media (min-width: 768px) {
+    .masonry-grid {
+      gap: 20px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .masonry-grid {
+      gap: 24px;
+    }
+  }
+  
