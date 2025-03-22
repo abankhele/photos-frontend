@@ -21,6 +21,37 @@ export default function Dashboard() {
     const [userPhotos, setUserPhotos] = useState<Photo[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+
+    // Load images when userPhotos changes
+    useEffect(() => {
+        const loadImages = async () => {
+            const urls: Record<string, string> = {};
+            for (const photo of userPhotos) {
+                try {
+                    const response = await fetch(photoService.getPhotoUrl(photo.id));
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        urls[photo.id] = URL.createObjectURL(blob);
+                    } else {
+                        console.error(`Failed to load image: ${photo.id}, status: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error(`Failed to load image for photo ${photo.id}:`, error);
+                }
+            }
+            setPhotoUrls(urls);
+        };
+
+        if (userPhotos.length > 0) {
+            loadImages();
+        }
+
+        // Cleanup function to revoke object URLs when component unmounts
+        return () => {
+            Object.values(photoUrls).forEach(url => URL.revokeObjectURL(url));
+        };
+    }, [userPhotos]);
 
     // Fetch user photos when component mounts
     useEffect(() => {
@@ -28,6 +59,10 @@ export default function Dashboard() {
             setIsLoading(true);
             try {
                 const photos = await photoService.getUserPhotos();
+                console.log("Fetched photos:", photos);
+                photos.forEach(photo => {
+                    console.log("Image URL:", photoService.getPhotoUrl(photo.id));
+                });
                 setUserPhotos(photos);
             } catch (error) {
                 console.error("Error fetching photos:", error);
@@ -70,7 +105,7 @@ export default function Dashboard() {
                 formData.append('tags', tags);
 
                 const data = await photoService.uploadPhoto(formData);
-                
+
                 setUploadedFiles(prev => [...prev, {
                     name: selectedFiles[i].name,
                     status: 'success',
@@ -84,7 +119,7 @@ export default function Dashboard() {
             // Refresh the photo gallery
             const photos = await photoService.getUserPhotos();
             setUserPhotos(photos);
-            
+
         } catch (error) {
             console.error('Upload error:', error);
         } finally {
@@ -117,7 +152,7 @@ export default function Dashboard() {
             formData.append('tags', tags);
 
             const data = await photoService.batchUploadPhotos(formData);
-            
+
             setUploadedFiles(data.map((item, index) => ({
                 name: selectedFiles[index]?.name || `File ${index + 1}`,
                 status: 'success',
@@ -125,11 +160,11 @@ export default function Dashboard() {
             })));
 
             setUploadProgress(100);
-            
+
             // Refresh the photo gallery
             const photos = await photoService.getUserPhotos();
             setUserPhotos(photos);
-            
+
         } catch (error) {
             console.error('Batch upload error:', error);
         } finally {
@@ -158,9 +193,9 @@ export default function Dashboard() {
                         <Card>
                             <CardContent className="p-6">
                                 <h2 className="text-2xl font-semibold mb-4">Upload Photos</h2>
-                                
+
                                 {/* File Upload Area */}
-                                <div 
+                                <div
                                     className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 mb-6 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                     onClick={() => fileInputRef.current?.click()}
                                 >
@@ -294,7 +329,7 @@ export default function Dashboard() {
                                             </>
                                         )}
                                     </Button>
-                                    
+
                                     <Button
                                         onClick={handleBatchUpload}
                                         disabled={selectedFiles.length === 0 || isUploading}
@@ -343,7 +378,7 @@ export default function Dashboard() {
                         <Card>
                             <CardContent className="p-6">
                                 <h2 className="text-2xl font-semibold mb-4">My Gallery</h2>
-                                
+
                                 {isLoading ? (
                                     <div className="flex justify-center items-center h-40">
                                         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
@@ -358,9 +393,13 @@ export default function Dashboard() {
                                                 className="relative group"
                                             >
                                                 <img
-                                                    src={photo.gcsUrl}
+                                                    src={photoUrls[photo.id] || ''}
                                                     alt="User photo"
                                                     className="w-full h-40 object-cover rounded-lg"
+                                                    onError={(e) => {
+                                                        console.error(`Failed to load image: ${photo.id}`);
+                                                        e.currentTarget.src = '/placeholder-image.jpg';
+                                                    }}
                                                 />
                                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 rounded-lg flex items-end justify-start">
                                                     <div className="p-2 w-full opacity-0 group-hover:opacity-100 transition-opacity">

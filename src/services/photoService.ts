@@ -1,61 +1,72 @@
 // src/services/photoService.ts
 import { Photo } from '@/types/photo';
+import { fetchWithAuth } from '@/services/fetchWithAuth';
 
-const API_URL = "http://localhost:8090/api/photos";
+const API_URL = 'http://localhost:8090/api';
 
 export const photoService = {
-    getUserPhotos: async (): Promise<Photo[]> => {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+    async getUserPhotos(): Promise<Photo[]> {
+        const userInfo = localStorage.getItem('user');
+        const user = userInfo ? JSON.parse(userInfo) : null;
         const userId = user?.id;
 
         if (!userId) {
-            throw new Error("User not authenticated");
+            throw new Error('User not authenticated');
         }
 
-        const encodedUserId = encodeURIComponent(userId);
-        const response = await fetch(`${API_URL}/user/${encodedUserId}`, {
-            method: "GET",
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(`${API_URL}/photos/user/${userId}`, {
             headers: {
-                "Authorization": `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${token}`
             }
         });
 
         if (!response.ok) {
-            throw new Error("Failed to fetch photos");
+            throw new Error('Failed to fetch photos');
         }
 
-        return response.json();
+        return await response.json();
     },
 
-    uploadPhoto: async (formData: FormData): Promise<Photo> => {
-        const response = await fetch(`${API_URL}`, {
-            method: "POST",
+    async uploadPhoto(formData: FormData): Promise<Photo> {
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(`${API_URL}/photos`, {
+            method: 'POST',
             headers: {
-                "Authorization": `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${token}`
             },
             body: formData
         });
 
         if (!response.ok) {
-            throw new Error("Failed to upload photo");
+            throw new Error('Failed to upload photo');
         }
 
-        return response.json();
+        return await response.json();
     },
 
-    batchUploadPhotos: async (formData: FormData): Promise<Photo[]> => {
-        const response = await fetch(`${API_URL}/batch`, {
-            method: "POST",
+    async batchUploadPhotos(formData: FormData): Promise<Photo[]> {
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(`${API_URL}/photos/batch`, {
+            method: 'POST',
             headers: {
-                "Authorization": `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${token}`
             },
             body: formData
         });
 
         if (!response.ok) {
-            throw new Error("Failed to batch upload photos");
+            throw new Error('Failed to batch upload photos');
         }
 
-        return response.json();
+        return await response.json();
+    },
+
+    getPhotoUrl(photoId: string): string {
+        const token = localStorage.getItem('token');
+        return `http://localhost:8090/api/photos/image/${photoId}?token=${token}`;
     }
 };
