@@ -68,6 +68,21 @@ export const photoService = {
     getPhotoUrl(photoId: string): string {
         const token = localStorage.getItem('token');
         return `http://localhost:8090/api/photos/image/${photoId}?token=${token}`;
-       
+
+    },
+
+    async searchPhotos(query: string): Promise<Photo[]> {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/photos/search?query=${encodeURIComponent(query)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to search photos');
+        }
+
+        return await response.json();
     }
 };
